@@ -121,11 +121,7 @@ func (c *Client) SubscribeWithContext(ctx context.Context, stream string, handle
 }
 
 // SubscribeChan sends all events to the provided channel
-func (c *Client) SubscribeChan(stream string, ch chan *Event, params ...interface{}) error {
-	var param interface{}
-	if len(params) > 0 {
-		param = params[0]
-	}
+func (c *Client) SubscribeChan(param interface{}, ch chan *Event, ops ...interface{}) error {
 	return c.SubscribeChanWithContext(context.Background(), param, ch)
 }
 
