@@ -121,12 +121,16 @@ func (c *Client) SubscribeWithContext(ctx context.Context, stream string, handle
 }
 
 // SubscribeChan sends all events to the provided channel
-func (c *Client) SubscribeChan(stream string, ch chan *Event) error {
-	return c.SubscribeChanWithContext(context.Background(), stream, ch)
+func (c *Client) SubscribeChan(stream string, ch chan *Event, params ...interface{}) error {
+	var param interface{}
+	if len(params) > 0 {
+		param = params[0]
+	}
+	return c.SubscribeChanWithContext(context.Background(), param, ch)
 }
 
 // SubscribeChanWithContext sends all events to the provided channel with context
-func (c *Client) SubscribeChanWithContext(ctx context.Context, stream string, ch chan *Event) error {
+func (c *Client) SubscribeChanWithContext(ctx context.Context, p interface{}, ch chan *Event) error {
 	var connected bool
 	errch := make(chan error)
 	c.mu.Lock()
@@ -134,9 +138,27 @@ func (c *Client) SubscribeChanWithContext(ctx context.Context, stream string, ch
 	c.mu.Unlock()
 
 	operation := func() error {
-		resp, err := c.request(ctx, stream)
-		if err != nil {
-			return err
+		var resp *http.Response
+		var err error
+		if p == nil {
+			p = ""
+		}
+		switch param := p.(type) {
+		case string:
+			resp, err = c.request(ctx, param)
+			if err != nil {
+				return err
+			}
+		case *http.Request:
+			resp, err = c.Connection.Do(param)
+			if err != nil {
+				return err
+			}
+		default:
+			resp, err = c.request(ctx, "")
+			if err != nil {
+				return err
+			}
 		}
 		if validator := c.ResponseValidator; validator != nil {
 			err = validator(c, resp)
